@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+
+  <title>Cartele BEST Timișoara</title>
+</head>
+
+<body>
+  <div
+    style='background-color:#ffffff;color:#262626;font-family:"Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;font-size:16px;font-weight:400;letter-spacing:0.15008px;line-height:1.5;margin:0;padding:32px 0;min-height:100%;width:100%'>
+    <table align="center" width="100%" style="margin:0 auto;max-width:600px;background-color:#FFFFFF"
+      role="presentation" cellspacing="0" cellpadding="0" border="0">
+      <tbody>
+        <tr style="width:100%">
+          <td>
+            <div style="padding:8px 24px 8px 24px">
+              <table align="center" width="100%" cellpadding="0" border="0"
+                style="table-layout:fixed;border-collapse:collapse">
+                <tbody style="width:100%">
+                  <tr style="width:100%">
+                    <td
+                      style="box-sizing:content-box;vertical-align:middle;padding-left:0;padding-right:8px;width:128px">
+                      <div style="padding:16px 24px 16px 24px">
+                        <img alt="Logo BEST"
+                          src="https://besttm.ro/wp-content/uploads/2022/09/cropped-SIGLA-BEST_Sigla-Color.png"
+                          style="outline:none;border:none;text-decoration:none;vertical-align:middle;display:inline-block;max-width:100%" />
+                      </div>
+                    </td>
+                    <td style="box-sizing:content-box;vertical-align:middle;padding-left:8px;padding-right:0">
+                      <h2 style="font-weight:bold;text-align:center;margin:0;font-size:24px;padding:0px 0px 0px 0px">
+                        Trezoreria BEST Timișoara
+                      </h2>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="padding:16px 0px 16px 0px">
+              <hr style="width:100%;border:none;border-top:1px solid #CCCCCC;margin:0" />
+            </div>
+            <div style="padding:16px 24px 16px 24px">
+              <h3 style="font-weight:bold;text-align:center;margin:0;font-size:20px;padding:0px 24px 0px 24px">
+                Sold cartelă
+              </h3>
+              <h1 id="balance"
+                style="font-weight:bold;text-align:center;margin:0;font-size:32px;padding:0px 24px 16px 24px">
+                XX BELEU
+              </h1>
+            </div>
+            <div style="height:32px"></div>
+            <div style="padding:16px 0px 16px 0px">
+              <hr style="width:100%;border:none;border-top:1px solid #CCCCCC;margin:0" />
+            </div>
+            <div style="font-weight:normal;padding:0px 24px 0px 24px">
+              Detalii Cartelă
+            </div>
+            <div style="height:16px"></div>
+            <div style="font-weight:normal;padding:0px 24px 0px 24px">
+              Titular cartelă
+            </div>
+            <div id="holder" style="font-weight:normal;padding:0px 24px 0px 24px">
+              JOHN DOE
+            </div>
+            <div style="height:16px"></div>
+            <div style="font-weight:normal;padding:0px 24px 0px 24px">
+              Adresă contract
+            </div>
+            <div id="address" onchange="qr()" style="font-size:14px;font-weight:normal;padding:0px 24px 0px 24px">
+              0x000000000000000000000000000000000
+            </div>
+            <div id="qr" style="padding:16px 24px 16px 24px;vertical-align: middle;"></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <script src="//cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+  <script type="text/javascript">
+    function qr() {
+      new QRCode(document.getElementById("qr"), document.getElementById("address").innerHTML);
+    }
+  </script>
+
+  <script type="module">
+    import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+    const provider = new ethers.JsonRpcProvider("https://json-rpc.evm.testnet.iotaledger.net");
+    const card_json_abi_holder = [
+      "function balance() view returns(uint256)",
+      "function HOLDER() view returns(string)"
+    ]
+
+    let address;
+    let holder;
+    let card;
+
+    async function setup() {
+      var params = new URLSearchParams(window.location.search);
+
+      if (params.get('card') === null) {
+        alert("Broken link. Contact treasurer!");
+
+        return -1;
+      }
+      card = new ethers.BaseContract(params.get('card'), card_json_abi_holder, provider);
+
+      address = params.get('card');
+      holder = await card.HOLDER();
+
+      document.getElementById("holder").innerHTML = holder;
+      document.getElementById("address").innerHTML = address;
+
+      qr();
+    }
+
+    async function loop() {
+      var balance = ethers.formatEther(await card.balance());
+      document.getElementById("balance").innerHTML = balance + " BELEU";
+    }
+
+    (async () => {
+      await setup();
+      await loop();
+      setInterval(loop, 5000);
+    })()
+
+  </script>
+</body>
+
+</html>
