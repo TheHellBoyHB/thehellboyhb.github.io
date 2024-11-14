@@ -73,7 +73,7 @@
         import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
 
         const provider = new ethers.JsonRpcProvider("https://json-rpc.evm.testnet.iotaledger.net");
-        const wallet = new ethers.Wallet("0x059450fbccb1cbc01f0c0e0353bcf919f9b332a2e052b3290afdfaf72ffa5e91", provider)
+        var wallet;
 
         const card_json_abi_merchant = [
             "function balance() view returns(uint256)",
@@ -83,6 +83,22 @@
         ];
 
         async function setup() {
+            var wallet_key = localStorage.getItem("merch_key");
+            if(wallet_key == null) {
+                wallet_key = prompt("Merchant key:");
+            };
+
+            try {
+                wallet = new ethers.Wallet(wallet_key, provider);
+            } catch (e) {
+                alert("Invalid key!");
+            }
+
+            if(wallet == null) {
+                return;
+            }
+
+            localStorage.setItem("merch_key", wallet_key);
             document.getElementById("address").addEventListener("change", async () => {
                 var card_address = document.getElementById("address").value;
 
