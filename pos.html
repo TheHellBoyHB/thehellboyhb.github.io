@@ -72,30 +72,8 @@
     <script type="module">
         import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
 
-        let signer = null;
-
-        let provider;
-        if (window.ethereum == null) {
-
-            // If MetaMask is not installed, we use the default provider,
-            // which is backed by a variety of third-party services (such
-            // as INFURA). They do not have private keys installed,
-            // so they only have read-only access
-            console.log("MetaMask not installed; using read-only defaults")
-            provider = ethers.getDefaultProvider()
-
-        } else {
-
-            // Connect to the MetaMask EIP-1193 object. This is a standard
-            // protocol that allows Ethers access to make all read-only
-            // requests through MetaMask.
-            provider = new ethers.BrowserProvider(window.ethereum)
-
-            // It also provides an opportunity to request access to write
-            // operations, which will be performed by the private key
-            // that MetaMask manages for the user.
-            signer = await provider.getSigner();
-        }
+        const provider = new ethers.JsonRpcProvider("https://json-rpc.evm.testnet.iotaledger.net");
+        const wallet = new ethers.Wallet("0x059450fbccb1cbc01f0c0e0353bcf919f9b332a2e052b3290afdfaf72ffa5e91", provider)
 
         const card_json_abi_merchant = [
             "function balance() view returns(uint256)",
@@ -121,6 +99,8 @@
             document.getElementById("pay").addEventListener("click", pay);
         }
 
+        
+
         async function pay() {
             var amount = ethers.parseEther(document.getElementById("amount").value);
             var card_address = document.getElementById("address").value;
@@ -130,7 +110,7 @@
                 return false;
             }
 
-            var card = new ethers.BaseContract(document.getElementById("address").value, card_json_abi_merchant, signer);
+            var card = new ethers.BaseContract(document.getElementById("address").value, card_json_abi_merchant, wallet);
             var balance = await card.balance();
 
             if (balance < amount) {
