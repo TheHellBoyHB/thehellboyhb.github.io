@@ -54,24 +54,17 @@
             <div style="padding:16px 0px 16px 0px">
               <hr style="width:100%;border:none;border-top:1px solid #CCCCCC;margin:0" />
             </div>
-            <div style="font-weight:normal;padding:0px 24px 0px 24px">
-              Detalii Cartelă
-            </div>
             <div style="height:16px"></div>
-            <div style="font-weight:normal;padding:0px 24px 0px 24px">
-              Titular cartelă
-            </div>
-            <div id="holder" style="font-weight:normal;padding:0px 24px 0px 24px">
-              JOHN DOE
-            </div>
-            <div style="height:16px"></div>
-            <div style="font-weight:normal;padding:0px 24px 0px 24px">
               Adresă contract
             </div>
-            <div id="address" onchange="qr()" style="font-size:14px;font-weight:normal;padding:0px 24px 0px 24px">
+            <div id="address" style="font-size:14px;font-weight:normal;padding:0px 0px 0px 0px">
               0x000000000000000000000000000000000
             </div>
-            <div id="qr" style="padding:16px 24px 16px 24px;vertical-align: middle;"></div>
+            <div style="height:16px"></div>
+            <div id="block">
+              <a id="button" href="#" style="color:#FFFFFF;font-size:16px;font-weight:bold;background-color:#ff0303;border-radius:4px;display:inline-block;padding:8px 12px;text-decoration:none"><span>Block Card</span></a>
+            </div>
+            <div style="height:16px"></div>
           </td>
         </tr>
       </tbody>
@@ -89,8 +82,12 @@
     const provider = new ethers.JsonRpcProvider("https://json-rpc.evm.testnet.iotaledger.net");
     const card_json_abi_holder = [
       "function balance() view returns(uint256)",
-      "function HOLDER() view returns(string)"
+      "function holder() view returns(string)",
+      "function blockCard() returns(bool)",
+      "function blocked() view returns(bool)"
     ]
+
+    const wallet = new ethers.Wallet("0x043437b7863ac6f0fd26d656df36f142811fa2ce5d31540728863ae7622bd202", provider);
 
     let address;
     let holder;
@@ -104,20 +101,31 @@
 
         return -1;
       }
-      card = new ethers.BaseContract(params.get('card'), card_json_abi_holder, provider);
+      card = new ethers.BaseContract(params.get('card'), card_json_abi_holder, wallet);
+
+      if (await card.blocked()) {
+        document.getElementById("block").innerHTML = `<h3 style="font-weight:bold;text-align:center;margin:0;font-size:20px;padding:0px 24px 0px 24px;color: red">Card is blocked! Contact Barman.</h3>`;
+      }
 
       address = params.get('card');
-      holder = await card.HOLDER();
+      holder = await card.holder();
 
-      document.getElementById("holder").innerHTML = holder;
       document.getElementById("address").innerHTML = address;
-
-      qr();
+      try {
+        document.getElementById("button").addEventListener("click", block);
+      } catch(e) {
+        console.log("Card is blocked. No need for addEventListener!");
+      }
     }
 
     async function loop() {
       var balance = ethers.formatEther(await card.balance());
       document.getElementById("balance").innerHTML = balance + " BELEU";
+    }
+
+    async function block() {
+      await card.blockCard();
+      document.getElementById("block").innerHTML = `<h3 style="font-weight:bold;text-align:center;margin:0;font-size:20px;padding:0px 24px 0px 24px;color: red">Card is blocked! Contact Barman.</h3>`;
     }
 
     (async () => {

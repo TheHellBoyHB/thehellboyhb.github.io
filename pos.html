@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+
+    <title>POS BEST Timișoara</title>
+</head>
+
+<body>
+    <div
+        style='background-color:#ffffff;color:#262626;font-family:"Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;font-size:16px;font-weight:400;letter-spacing:0.15008px;line-height:1.5;margin:0;padding:32px 0;min-height:100%;width:100%'>
+        <table align="center" width="100%" style="margin:0 auto;max-width:600px;background-color:#FFFFFF"
+            role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tbody>
+                <tr style="width:100%">
+                    <td>
+                        <h2 style="font-weight:bold;text-align:center;margin:0;font-size:24px;padding:0px 0px 0px 0px">
+                            Point of Sale
+                        </h2>
+                        <div style="padding:16px 0px 16px 0px">
+                            <hr style="width:100%;border:none;border-top:1px solid #CCCCCC;margin:0" />
+                        </div>
+                        <div style="font-weight:normal;padding:0px 24px 0px 16px">
+                            Valoare de retras
+                        </div>
+                        <div style="padding:16px 24px 16px 24px">
+                            <input id="amount" type="number" style="width: 100%; height: 32px;" />
+                        </div>
+                        <div style="height:16px"></div>
+                        <div style="font-weight:normal;padding:0px 24px 0px 16px">
+                            Adresă Cartelă
+                        </div>
+                        <div style="padding:16px 24px 16px 24px">
+                            <input id="address" type="text" style="width: 100%;height: 32px;" />
+                        </div>
+                        <div style="padding:16px 0px 16px 0px">
+                            <hr style="width:100%;border:none;border-top:1px solid #CCCCCC;margin:0" />
+                        </div>
+                        <div style="font-weight:normal;padding:0px 24px 0px 24px">
+                            Balanță cartelă
+                        </div>
+                        <div id="balance" style="font-weight:bold;text-align:left;padding:16px 24px 16px 24px">
+                            0.0 BELEU
+                        </div>
+                        <div id="log"
+                            style="font-weight:bold;text-align:left;padding:16px 24px 16px 24px;text-align: center;color: red;">
+                        </div>
+                        <div style="height:32px"></div>
+                        <div style="text-align:center;padding:16px 24px 16px 24px">
+                            <a id="pay" href="#"
+                                style="color:#FFFFFF;font-size:16px;font-weight:bold;background-color:#5836ff;border-radius:4px;display:inline-block;padding:12px 20px;text-decoration:none"><span><!--[if mso
+                      ]><i
+                        style="letter-spacing: 20px;mso-font-width:-100%;mso-text-raise:30"
+                        hidden
+                        >&nbsp;</i
+                      ><!
+                    [endif]--></span><span>Plătește</span><span><!--[if mso
+                      ]><i
+                        style="letter-spacing: 20px;mso-font-width:-100%"
+                        hidden
+                        >&nbsp;</i
+                      ><!
+                    [endif]--></span></a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script type="module">
+        import { ethers } from "https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.min.js";
+
+        let signer = null;
+
+        let provider;
+        if (window.ethereum == null) {
+
+            // If MetaMask is not installed, we use the default provider,
+            // which is backed by a variety of third-party services (such
+            // as INFURA). They do not have private keys installed,
+            // so they only have read-only access
+            console.log("MetaMask not installed; using read-only defaults")
+            provider = ethers.getDefaultProvider()
+
+        } else {
+
+            // Connect to the MetaMask EIP-1193 object. This is a standard
+            // protocol that allows Ethers access to make all read-only
+            // requests through MetaMask.
+            provider = new ethers.BrowserProvider(window.ethereum)
+
+            // It also provides an opportunity to request access to write
+            // operations, which will be performed by the private key
+            // that MetaMask manages for the user.
+            signer = await provider.getSigner();
+        }
+
+        const card_json_abi_merchant = [
+            "function balance() view returns(uint256)",
+            "function holder() view returns(string)",
+            "function blocked() view returns(bool)",
+            "function payment(uint256) returns(bool)"
+        ];
+
+        async function setup() {
+            document.getElementById("address").addEventListener("change", async () => {
+                var card_address = document.getElementById("address").value;
+
+                if (!ethers.isAddress(card_address)) {
+                    console.log("Not an address");
+                    return false;
+                }
+
+                var card = new ethers.BaseContract(document.getElementById("address").value, card_json_abi_merchant, provider);
+                var balance = await card.balance();
+
+                document.getElementById("balance").innerHTML = ethers.formatEther(balance) + " BELEU";
+            });
+            document.getElementById("pay").addEventListener("click", pay);
+        }
+
+        async function pay() {
+            var amount = ethers.parseEther(document.getElementById("amount").value);
+            var card_address = document.getElementById("address").value;
+
+            if (!ethers.isAddress(card_address)) {
+                alert("Wrong address!");
+                return false;
+            }
+
+            var card = new ethers.BaseContract(document.getElementById("address").value, card_json_abi_merchant, signer);
+            var balance = await card.balance();
+
+            if (balance < amount) {
+                alert("Not enought BELEUs");
+                return false;
+            }
+
+            var try_pay;
+            try {
+                try_pay = await card.payment(amount)
+            } catch ({ name, message }) {
+                alert(message);
+            }
+
+            if (!try_pay || try_pay == null) {
+                alert("Something went wrong processing Tx");
+                return false;
+            }
+
+            document.getElementById("balance").innerHTML = "0.0 BELEU";
+            document.getElementById("amount").value = null;
+            document.getElementById("address").value = null;
+
+            alert("Transaction Completed!");
+            return true;
+        }
+
+        (async () => {
+            await setup();
+        })();
+
+    </script>
+</body>
+
+</html>
